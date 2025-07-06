@@ -1,0 +1,9 @@
+# lilToon VAT Shader
+
+This shader is a VAT (Vertex Animation Texture) system for the lilToon.
+
+This is a custom shader of lilToon that ports the nekoVAT system by nekoya to lilToon.
+
+Use original nekoVAT system by nekoya for creating VAT textures in blender.
+
+nekoVAT system by nekoya: https://booth.pm/ja/items/5943052

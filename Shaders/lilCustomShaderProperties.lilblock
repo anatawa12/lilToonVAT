@@ -1,0 +1,13 @@
+
+        //----------------------------------------------------------------------------------------------------------------------
+        // Custom Properties
+        //_CustomVariable ("Custom Variable", Float) = 0
+        
+        _PosTexture("Position Texture", 2D) = "white"{}
+
+        [Toggle] _IsFluid("Is Mock Object", Float) = 0
+        _Motion("Motion Parametor", Float) = 0
+        [Toggle] _IsLerp("Motion Lerp", Float) = 0
+        [Toggle] _IsRand("Random Motion", Float) = 0
+        [Toggle] _TimeMotion("Time Motion", Float) = 0
+        _FPS("Time Motion FPS", Float) = 15

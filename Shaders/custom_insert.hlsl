@@ -108,9 +108,6 @@ void vat_fragment(uint vid, in float2 uv1, out float3 normalOS, inout float4 pos
           normal = lerp(normal, normal2, frac(motion));
      }
 
-     // flip z-axis to fix Unity's coord sys and blender's coord sys
-     pos.z *= -1;
-
      positionOS.xyz = pos;
      normalOS = normal;
 }

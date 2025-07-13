@@ -279,7 +279,7 @@ class HelloWorldPanel(bpy.types.Panel):
         obj = context.object
         scene = context.scene
 
-        layout.row().label(text="Active object is: " + obj.name)
+        layout.row().label(text="Active object is: " + obj.name if obj is not None else "No active object")
         layout.prop(scene, "max_resolution", text=f"最大サイズ:{2 ** scene.max_resolution}")
         if not scene.mock_object:
             layout.prop(scene, "vertex_compress", text="頂点情報圧縮")

@@ -7,3 +7,8 @@ This is a custom shader of lilToon that ports the nekoVAT system by nekoya to li
 Use original nekoVAT system by nekoya for creating VAT textures in blender.
 
 nekoVAT system by nekoya: https://booth.pm/ja/items/5943052
+
+## Notes
+- Because of liltoon's problem, normals transformed by VAT may not be applied for outline rendering so
+  you might see weird outline artifacts, especially when using mock object mode.
+  https://github.com/lilxyzw/lilToon/pull/296

@@ -35,6 +35,7 @@
     float _Motion; \
     float _IsLerp; \
     float _IsRand; \
+    float _IsSkinningMode; \
     float _TimeMotion; \
     float _FPS; \
     float4 _PosTexture_TexelSize;
@@ -56,7 +57,7 @@
 //#define LIL_REQUIRE_APP_TEXCOORD7
 //#define LIL_REQUIRE_APP_COLOR
 #define LIL_REQUIRE_APP_NORMAL
-//#define LIL_REQUIRE_APP_TANGENT
+#define LIL_REQUIRE_APP_TANGENT
 #define LIL_REQUIRE_APP_VERTEXID
 
 // Add vertex shader output
@@ -74,7 +75,7 @@
 #define LIL_CUSTOM_VERT_COPY
 
 // Inserting a process into the vertex shader
-#define LIL_CUSTOM_VERTEX_OS vat_fragment(input.vertexID, input.uv1, input.normalOS, positionOS);
+#define LIL_CUSTOM_VERTEX_OS vat_fragment(input.vertexID, input.uv1, input.normalOS, input.tangentOS, positionOS);
 //#define LIL_CUSTOM_VERTEX_WS
 
 // Inserting a process into pixel shader

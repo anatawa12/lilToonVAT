@@ -166,8 +166,10 @@ def CreateObject(polygon_count, objs):
 
 
 
-def Main_UV(objs, max_resolution, hard_edge, vertex_compress):
+def Main_UV(objs, max_resolution, hard_edge, vertex_compress, skinning_mode):
     if vertex_compress:
+        hard_edge = False
+    if skinning_mode:
         hard_edge = False
 
     start_frame = bpy.context.scene.frame_start
@@ -204,21 +206,44 @@ def Main_UV(objs, max_resolution, hard_edge, vertex_compress):
             eval_obj = obj.evaluated_get(depsgraph)
             mesh = eval_obj.to_mesh()
             uv_layer = eval_obj.data.uv_layers.get("VertexUV")
-            for polygon in mesh.polygons:
+            original_mesh = obj.to_mesh()
+            original_mesh.calc_tangents()
+            for polygon_i, polygon in enumerate(mesh.polygons):
                 for i, loop_index in enumerate(polygon.loop_indices):
                     uv = uv_layer.data[loop_index].uv
                     pixel = [int(uv.y * height), int(uv.x * width)]
                     pixel[0] += (frame - start_frame) * column
 
-                    vertex_pos = obj.matrix_world @ mesh.vertices[polygon.vertices[i]].co - origins[obj]
-                    normal = obj.matrix_world @ polygon.normal - obj.matrix_world.translation \
-                        if hard_edge \
-                        else obj.matrix_world @ mesh.vertices[polygon.vertices[i]].normal - obj.matrix_world.translation
-                    normal = normal.normalized()
+                    vertex_pos, normal = compute_object_offset(obj, mesh, polygon, i, hard_edge, origins[obj])
 
-                    texture.SetPixel(*pixel, *vertex_pos, NormalToFloat(*normal))
+                    if skinning_mode:
+                        # スキニングアニメーション対応では、original mesh の normal と tangent で作られる頂点空間におけるオフセットと
+                        # 法線の方向を計算し、それを保存する
+                        original_vertex_pos, original_normal = compute_object_offset(obj, original_mesh, original_mesh.polygons[polygon_i], i, hard_edge, origins[obj])
+                        original_tangent = obj.matrix_world @ original_mesh.loops[loop_index].tangent - obj.matrix_world.translation
+                        original_bitangent = obj.matrix_world @ original_mesh.loops[loop_index].bitangent - obj.matrix_world.translation
+                        vertex_space_matrix = np.array([
+                            original_tangent.normalized(),
+                            original_bitangent.normalized(),
+                            original_normal.normalized()
+                        ]).T
+                        vertex_offset = vertex_space_matrix @ (vertex_pos - original_vertex_pos)
+                        normal = vertex_space_matrix @ normal.normalized()
+                        texture.SetPixel(*pixel, *vertex_offset, NormalToFloat(*normal))
+                        pass
+                    else:
+                        texture.SetPixel(*pixel, *vertex_pos, NormalToFloat(*normal))
 
     texture.Export()
+
+def compute_object_offset(obj, mesh, polygon, loop_vertex_idx, hard_edge, origin):
+    vertex_pos = obj.matrix_world @ mesh.vertices[polygon.vertices[loop_vertex_idx]].co - origin
+    normal = obj.matrix_world @ polygon.normal - obj.matrix_world.translation \
+        if hard_edge \
+        else obj.matrix_world @ mesh.vertices[polygon.vertices[loop_vertex_idx]].normal - obj.matrix_world.translation
+    normal = normal.normalized()
+    return vertex_pos, normal
+
 
 def Main_VertexID(objs, max_resolution, hard_edge):
     start_frame = bpy.context.scene.frame_start
@@ -283,6 +308,7 @@ class HelloWorldPanel(bpy.types.Panel):
         layout.prop(scene, "max_resolution", text=f"最大サイズ:{2 ** scene.max_resolution}")
         if not scene.mock_object:
             layout.prop(scene, "vertex_compress", text="頂点情報圧縮")
+            layout.prop(scene, "skinning_mode", text="スキニングモード")
         if not scene.vertex_compress:
             layout.prop(scene, "mock_object", text="モックオブジェクト作成")
             layout.prop(scene, "hard_edge", text="フラットシェード")
@@ -302,6 +328,7 @@ class SimpleOperator(bpy.types.Operator):
         vertex_compress = scene.vertex_compress
         mock_object = scene.mock_object
         hard_edge = scene.hard_edge
+        skinning_mode = scene.skinning_mode
 
         if vertex_compress:
             mock_object = False
@@ -313,7 +340,7 @@ class SimpleOperator(bpy.types.Operator):
         if mock_object:
             Main_VertexID(objs, max_resolution, hard_edge)
         else:
-            Main_UV(objs, max_resolution, hard_edge, vertex_compress)
+            Main_UV(objs, max_resolution, hard_edge, vertex_compress, skinning_mode)
 
         return {'FINISHED'}
 
@@ -344,6 +371,11 @@ def register():
         description="法線をフラットシェードで出力するか",
         default=False
     )
+    bpy.types.Scene.skinning_mode = bpy.props.BoolProperty(
+        name="Skinning Mode",
+        description="スキニングアニメーションに対応するか",
+        default=False
+    )
     
 
 def unregister():
@@ -354,6 +386,7 @@ def unregister():
     del bpy.types.Scene.vertex_compress
     del bpy.types.Scene.mock_object
     del bpy.types.Scene.hard_edge
+    del bpy.types.Scene.skinning_mode
 
 if __name__ == "__main__":
     register()

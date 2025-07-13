@@ -55,7 +55,43 @@ float rand(float2 uv)
      return frac(sin(dot(uv, float2(12.9898, 78.233))) * 43758.5453);
 }
 
-void vat_fragment(uint vid, in float2 uv1, out float3 normalOS, inout float4 positionOS)
+void compute_vat_pos_normal(uint vid, float2 uv1, float column, float motion, inout float3 positionOS, inout float4 tangentOS, inout float3 normalOS)
+{
+     float2 uv;
+     if (_IsMock) {
+          uv = float2(
+              float(vid) % _PosTexture_TexelSize.z * _PosTexture_TexelSize.x,
+              (int(float(vid) * _PosTexture_TexelSize.x) + 1.0f) * _PosTexture_TexelSize.y
+          );
+     } else {
+          uv = uv1;
+     }
+     uv.y += _PosTexture_TexelSize.y * column * motion;
+
+     float4 tex = LIL_SAMPLE_2D_LOD(_PosTexture, anatawa12_vat_sampler_point_repeat, uv, 0);
+     float3 pos = float3(tex.r, tex.b, tex.g);
+     half3 normal = NormalUnpack(tex.a);
+     normal = normalize(half3(normal.x, normal.z, normal.y));
+
+     if (_IsSkinningMode) {
+          float3 bitangentOS = normalize(cross(normalOS, tangentOS.xyz)) * (tangentOS.w * length(normalOS));
+          float3x3 tbnOS = float3x3(tangentOS.xyz, normalOS, bitangentOS);
+
+          positionOS += mul(tbnOS, pos);
+          normalOS = normalize(mul(tbnOS, normal));
+
+          // rotate tangentOS as like rotating (0,0,1) to normal
+          float3 xaxis = normalize(cross(float3(0,0,1), normal));
+          float3 yaxis = normalize(cross(normal, xaxis));
+          float3x3 normalRotation = float3x3(xaxis, normal, yaxis);
+          tangentOS.xyz = normalize(mul(normalRotation, tangentOS.xyz));
+     } else {
+          positionOS = pos;
+          normalOS = normal;
+     }
+}
+
+void vat_fragment(uint vid, in float2 uv1, inout float3 normalOS, inout float4 tangentOS, inout float4 positionOS)
 {
      float4 param = LIL_SAMPLE_2D_LOD(_PosTexture, anatawa12_vat_sampler_point_repeat, 0, 0);
      int column, maxMotion;
@@ -73,42 +109,24 @@ void vat_fragment(uint vid, in float2 uv1, out float3 normalOS, inout float4 pos
      }
      motion = motion % maxMotion;
 
-     float2 uv;
-     if (_IsMock) {
-          uv = float2(
-              float(vid) % _PosTexture_TexelSize.z * _PosTexture_TexelSize.x,
-              (int(float(vid) * _PosTexture_TexelSize.x) + 1.0f) * _PosTexture_TexelSize.y
-          );
-     } else {
-          uv = uv1;
-     }
-     uv.y += _PosTexture_TexelSize.y * column * floor(motion);
+     float3 pos = positionOS;
+     float3 normal = normalOS;
+     float4 tangent = tangentOS;
+     compute_vat_pos_normal(vid, uv1, column, floor(motion), pos, tangent, normal);
 
-     float4 tex = LIL_SAMPLE_2D_LOD(_PosTexture, anatawa12_vat_sampler_point_repeat, uv, 0);
-     float3 pos = float3(tex.r, tex.b, tex.g);
-     half3 normal = NormalUnpack(tex.a);
-     normal = normalize(half3(normal.x, normal.z, normal.y));
      if (_IsLerp) {
-          if (_IsMock) {
-               uv.y = (int(float(vid) * _PosTexture_TexelSize.x) + 1.0f) * _PosTexture_TexelSize.y;
-          } else {
-               uv.y = uv1.y;
-          }
-
-          uv.y += (motion >= maxMotion - 1.0f)
-              ? _PosTexture_TexelSize.y * column
-              : _PosTexture_TexelSize.y * column * ceil(motion);
-
-          float4 tex2 = LIL_SAMPLE_2D_LOD(_PosTexture, anatawa12_vat_sampler_point_repeat, uv, 0);
-          float3 pos2 = float3(tex2.r, tex2.b, tex2.g);
-          half3 normal2 = NormalUnpack(tex2.a);
-          normal2 = normalize(half3(normal2.x, normal2.z, normal2.y));
+          float3 pos2 = positionOS;
+          float3 normal2 = normalOS;
+          float4 tangent2 = tangentOS;
+          compute_vat_pos_normal(vid, uv1, column, (motion >= maxMotion - 1.0f) ? 0 : ceil(motion), pos2, tangent2, normal2);
 
           pos = lerp(pos, pos2, frac(motion));
           normal = lerp(normal, normal2, frac(motion));
+          tangent = lerp(tangent, tangent2, frac(motion));
      }
 
      positionOS.xyz = pos;
      normalOS = normal;
+     tangentOS = tangent;
 }
 

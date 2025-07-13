@@ -12,6 +12,7 @@ namespace Anatawa12.lilToonVAT
         MaterialProperty motion;
         MaterialProperty isLerp;
         MaterialProperty isRand;
+        MaterialProperty isSkinningMode;
         MaterialProperty timeMotion;
         MaterialProperty fps;
         MaterialProperty posTexture;
@@ -35,6 +36,7 @@ namespace Anatawa12.lilToonVAT
             motion = FindProperty("_Motion", props);
             isLerp = FindProperty("_IsLerp", props);
             isRand = FindProperty("_IsRand", props);
+            isSkinningMode = FindProperty("_IsSkinningMode", props);
             timeMotion = FindProperty("_TimeMotion", props);
             fps = FindProperty("_FPS", props);
             posTexture = FindProperty("_PosTexture", props);
@@ -61,6 +63,7 @@ namespace Anatawa12.lilToonVAT
                 m_MaterialEditor.ShaderProperty(isMock, "Is Mock");
                 m_MaterialEditor.ShaderProperty(isLerp, "Is Lerp");
                 m_MaterialEditor.ShaderProperty(isRand, "Is Rand");
+                m_MaterialEditor.ShaderProperty(isSkinningMode, "Is Skinning Mode");
                 m_MaterialEditor.ShaderProperty(timeMotion, "Time Motion");
 
                 EditorGUI.BeginDisabledGroup(timeMotion.floatValue != 0);

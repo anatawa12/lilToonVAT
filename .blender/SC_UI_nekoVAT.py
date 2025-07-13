@@ -192,7 +192,6 @@ def Main_UV(objs, max_resolution, hard_edge, vertex_compress, skinning_mode):
     origins = {}
     for obj in objs:
         origins[obj] = obj.location.copy()
-        obj.to_mesh().calc_tangents()
 
     if vertex_compress:
         FixUV_Dupe([obj.data for obj in objs], width, height)
@@ -208,6 +207,7 @@ def Main_UV(objs, max_resolution, hard_edge, vertex_compress, skinning_mode):
             mesh = eval_obj.to_mesh()
             uv_layer = eval_obj.data.uv_layers.get("VertexUV")
             original_mesh = obj.to_mesh()
+            original_mesh.calc_tangents()
             for polygon_i, polygon in enumerate(mesh.polygons):
                 for i, loop_index in enumerate(polygon.loop_indices):
                     uv = uv_layer.data[loop_index].uv
@@ -308,7 +308,7 @@ class HelloWorldPanel(bpy.types.Panel):
         layout.prop(scene, "max_resolution", text=f"最大サイズ:{2 ** scene.max_resolution}")
         if not scene.mock_object:
             layout.prop(scene, "vertex_compress", text="頂点情報圧縮")
-            layout.prop(scene, "skinning_mode", text="頂点情報圧縮")
+            layout.prop(scene, "skinning_mode", text="スキニングモード")
         if not scene.vertex_compress:
             layout.prop(scene, "mock_object", text="モックオブジェクト作成")
             layout.prop(scene, "hard_edge", text="フラットシェード")

@@ -55,7 +55,7 @@ float rand(float2 uv)
      return frac(sin(dot(uv, float2(12.9898, 78.233))) * 43758.5453);
 }
 
-void compute_vat_pos_normal(uint vid, float2 uv1, float column, float motion, inout float3 positionOS, inout float3 normalOS)
+void compute_vat_pos_normal(uint vid, float2 uv1, float column, float motion, inout float3 positionOS, inout float4 tangentOS, inout float3 normalOS)
 {
      float2 uv;
      if (_IsMock) {
@@ -73,11 +73,25 @@ void compute_vat_pos_normal(uint vid, float2 uv1, float column, float motion, in
      half3 normal = NormalUnpack(tex.a);
      normal = normalize(half3(normal.x, normal.z, normal.y));
 
-     positionOS = pos;
-     normalOS = normal;
+     if (_IsSkinningMode) {
+          float3 bitangentOS = normalize(cross(normalOS, tangentOS.xyz)) * (tangentOS.w * length(normalOS));
+          float3x3 tbnOS = float3x3(tangentOS.xyz, normalOS, bitangentOS);
+
+          positionOS += mul(tbnOS, pos);
+          normalOS = normalize(mul(tbnOS, normal));
+
+          // rotate tangentOS as like rotating (0,0,1) to normal
+          float3 xaxis = normalize(cross(float3(0,0,1), normal));
+          float3 yaxis = normalize(cross(normal, xaxis));
+          float3x3 normalRotation = float3x3(xaxis, normal, yaxis);
+          tangentOS.xyz = normalize(mul(normalRotation, tangentOS.xyz));
+     } else {
+          positionOS = pos;
+          normalOS = normal;
+     }
 }
 
-void vat_fragment(uint vid, in float2 uv1, inout float3 normalOS, inout float4 positionOS)
+void vat_fragment(uint vid, in float2 uv1, inout float3 normalOS, inout float4 tangentOS, inout float4 positionOS)
 {
      float4 param = LIL_SAMPLE_2D_LOD(_PosTexture, anatawa12_vat_sampler_point_repeat, 0, 0);
      int column, maxMotion;
@@ -97,18 +111,22 @@ void vat_fragment(uint vid, in float2 uv1, inout float3 normalOS, inout float4 p
 
      float3 pos = positionOS;
      float3 normal = normalOS;
-     compute_vat_pos_normal(vid, uv1, column, floor(motion), pos, normal);
+     float4 tangent = tangentOS;
+     compute_vat_pos_normal(vid, uv1, column, floor(motion), pos, tangent, normal);
 
      if (_IsLerp) {
           float3 pos2 = positionOS;
-          half3 normal2 = normalOS;
-          compute_vat_pos_normal(vid, uv1, column, (motion >= maxMotion - 1.0f) ? 0 : ceil(motion), pos2, normal2);
+          float3 normal2 = normalOS;
+          float4 tangent2 = tangentOS;
+          compute_vat_pos_normal(vid, uv1, column, (motion >= maxMotion - 1.0f) ? 0 : ceil(motion), pos2, tangent2, normal2);
 
           pos = lerp(pos, pos2, frac(motion));
           normal = lerp(normal, normal2, frac(motion));
+          tangent = lerp(tangent, tangent2, frac(motion));
      }
 
      positionOS.xyz = pos;
      normalOS = normal;
+     tangentOS = tangent;
 }
 

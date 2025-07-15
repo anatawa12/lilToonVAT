@@ -3,6 +3,6 @@
   "displayName": "lilToon VAT",
   "version": "1.0.1-beta.0",
   "vpmDependencies": {
-    "jp.lilxyzw.liltoon": "1.0.0"
+    "jp.lilxyzw.liltoon": "^1.10.0"
   }
 }

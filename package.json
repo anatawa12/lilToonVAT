@@ -1,7 +1,7 @@
 {
   "name": "com.anatawa12.liltoon-vat",
   "displayName": "lilToon VAT",
-  "version": "1.0.2",
+  "version": "1.0.3-beta.0",
   "vpmDependencies": {
     "jp.lilxyzw.liltoon": "^1.10.0 || ^2.0.0"
   }

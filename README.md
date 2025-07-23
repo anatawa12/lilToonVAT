@@ -1,4 +1,4 @@
-# lilToon VAT Shader
+# lilToonVAT Shader
 
 This shader is a VAT (Vertex Animation Texture) system for the lilToon.
 
